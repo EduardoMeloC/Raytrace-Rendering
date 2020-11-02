@@ -36,4 +36,4 @@ clean:
 	@echo " $(OBJECTS)"
 	@echo " $(BUILDDIR)/%.o"
 	@echo " Cleaning..."
-	@echo " $(RM) -r $(BUILDDIR) $(TARGET)"; $(RM) -r $(BUILDDIR) $(TARGET)
+	@echo " $(RM) -r $(BUILDDIR) $(TARGETDIR)"; $(RM) -r $(BUILDDIR) $(TARGETDIR)
