@@ -1,5 +1,5 @@
 # 
-# This file was taken from:
+# This file was slightly modified from:
 # https://hiltmon.com/blog/2013/07/03/a-simple-c-plus-plus-project-structure/
 #
 
@@ -7,8 +7,9 @@ CC := g++ -std=c++20
 
 SRCDIR := src
 BUILDDIR := build
-TARGET := bin/executable
+TARGETDIR := bin
 
+TARGET := $(TARGETDIR)/executable
 SRCEXT := cpp
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
@@ -18,6 +19,7 @@ INC := -I include
 
 $(TARGET): $(OBJECTS)
 	@echo " Linking..."
+	@mkdir -p $(TARGETDIR)
 	@echo " $(CC) $^ -o $(TARGET) $(LIB)"; $(CC) $^ -o $(TARGET) $(LIB)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
