@@ -1,25 +1,34 @@
 #include "../include/headers.h"
 #include "../include/Vector3.h"
 #include "../include/Sphere.h"
+#include "../include/Canvas.h"
+#include "../include/Camera.h"
 
 #include <fstream>
 
 int main(void){
     std::ofstream image;
-    const uint16_t image_width = 80;
-    const uint16_t image_height = 60;
+    Canvas canvas(80, 60);
+    Camera camera(canvas, PI/4);
+    std::cout << camera.focalLength << std::endl;
+
+    Sphere sphere(Vector3(0, 0, 100), 30);
 
     image.open("image.ppm");
-        image << "P3" << " " << image_width << " " << image_height << " 255" << std::endl;
-        for(uint16_t i = 0; i < image_height; i++){
-            for(uint16_t j = 0; j < image_width; j++){
-                int R, G, B;
-                R = (int) (255 * j / image_width);
-                G = (int) (255 * i / image_height);
-                B = 0;
-                image << R << " " << G << " " << B << "\t";
+        image << "P6" << " " << canvas.width << " " << canvas.height << " 255" << std::endl;
+        for(int i = 0; i < canvas.height; i++){
+            for(int j = 0; j < canvas.width; j++){
+                Vector3 pixelPosition(j + 0.5f - canvas.width/2, i + 0.5f - canvas.height/2, camera.focalLength);
+                Ray ray(camera.position, pixelPosition - camera.position);
+                RayHit* hit = ray.cast(sphere);
+                char R, G, B;
+                R = (char) (255 * j / canvas.width);
+                G = (char) (255 * i / canvas.height);
+                B = (hit != nullptr) ? 255 : 0;
+                image << R << G << B;
+                if(hit) std::cout << "hit sphere!" << std::endl;
+                delete hit;
             }
-            image << std::endl;
         }
     image.close();
     return 0;
