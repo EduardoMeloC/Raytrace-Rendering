@@ -24,6 +24,7 @@ struct Ray
 
     // constructors
     Ray(const Vector3& origin, const Vector3& direction);
+    Ray();
 
     // methods
    RayHit* cast(const Object& object);
