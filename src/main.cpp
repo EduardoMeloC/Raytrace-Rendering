@@ -4,6 +4,7 @@
 #include "../include/Sphere.h"
 #include "../include/Canvas.h"
 #include "../include/Camera.h"
+#include "../include/Plane.h"
 
 #include <fstream>
 #include <vector>
@@ -11,7 +12,7 @@
 #include <time.h>
 
 void computePrimRay(int i, int j, Ray& ray, const Camera& camera);
-Color traceRay(Ray& ray, const std::vector<Sphere>& objects);
+Color traceRay(Ray& ray, const std::vector<Object*>& objects);
 
 int main(void){
     // Doing this to generate random spheres
@@ -21,11 +22,12 @@ int main(void){
     Canvas canvas(800, 600);
     Camera camera(Vector3(0, 0, -100), canvas, PI/4);
 
-    std::vector<Sphere> objects;
+    std::vector<Object*> objects;
 
     for(int i=0; i < 5; i++){
-        objects.push_back(Sphere(Vector3(rand()%50-25, rand()%50-25, rand()%50-25), 5));
+        objects.push_back(new Sphere(Vector3(rand()%50-25, 15, rand()%50-25), 5));
     }
+    objects.push_back(new Plane(Vector3(0, 20, 0), Vector3(0, 1, 0)));
 
     image.open("image.ppm");
         image << "P6" << " " << canvas.width << " " << canvas.height << " 255" << std::endl;
@@ -50,7 +52,7 @@ void computePrimRay(int i, int j, Ray& primRay, const Camera& camera){
     primRay.direction = (pixelPosition - camera.position).normalized();
 }
 
-Color traceRay(Ray& ray, const std::vector<Sphere>& objects){
+Color traceRay(Ray& ray, const std::vector<Object*>& objects){
     int n_objects = (int) objects.size();
 
     Color backgroundColor(0, 0, 0);
@@ -61,7 +63,7 @@ Color traceRay(Ray& ray, const std::vector<Sphere>& objects){
     RayHit *closestHit = new RayHit(Vector3(0), Vector3(0), std::numeric_limits<float>::infinity());
 
     for (int i = 0; i < n_objects; i++){
-        RayHit* hit = ray.cast(objects[i]);
+        RayHit* hit = ray.cast(*objects[i]);
         if(hit){
             if(hit->distance < closestHit->distance){
                 delete closestHit;
@@ -84,7 +86,7 @@ Color traceRay(Ray& ray, const std::vector<Sphere>& objects){
 
     Ray shadowRay(closestHit->point, light.position - closestHit->point);
     for (int i = 0; i < n_objects; i++){
-        RayHit* hit = shadowRay.cast(objects[i]);
+        RayHit* hit = shadowRay.cast(*objects[i]);
         if(hit){
             delete hit;
             return shadowColor;
@@ -92,7 +94,7 @@ Color traceRay(Ray& ray, const std::vector<Sphere>& objects){
     }
 
     float distanceToLight = (light.position - closestHit->point).magnitude();
-    float maxDistance = 30; // this is the maximum distance still visible by light
+    float maxDistance = 64; // this is the maximum distance still visible by light
     if(distanceToLight > maxDistance) distanceToLight = maxDistance;
     char R = (char) 255-(distanceToLight/maxDistance * 255);
     char G = (char) 255-(distanceToLight/maxDistance * 255);
