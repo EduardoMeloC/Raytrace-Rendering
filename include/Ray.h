@@ -2,7 +2,7 @@
 
 #include "headers.h"
 #include "Vector3.h"
-#include "Object.h"
+#include "Shape.h"
 
 struct RayHit
 {
@@ -23,5 +23,5 @@ struct Ray
     Ray();
 
     // methods
-   RayHit* cast(const Object& object);
+   RayHit* cast(const Shape& object);
 };

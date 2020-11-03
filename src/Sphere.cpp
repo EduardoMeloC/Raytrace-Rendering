@@ -1,7 +1,7 @@
 #include "../include/Sphere.h"
 
 // constructor
-Sphere::Sphere(Vector3 position, float radius): Object(position), radius(radius), radius2(radius*radius){}
+Sphere::Sphere(Vector3 position, float radius): Shape(position), radius(radius), radius2(radius*radius){}
 
 RayHit* Sphere::intersectsWith(const Ray& ray) const{
     // We'll use the geometric approach

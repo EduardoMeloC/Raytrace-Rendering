@@ -1,10 +1,10 @@
 #pragma once
 
 #include "headers.h"
-#include "Object.h"
+#include "Shape.h"
 #include "Ray.h"
 
-class Plane: public Object
+class Plane: public Shape
 {
 public:
     Vector3 normal;

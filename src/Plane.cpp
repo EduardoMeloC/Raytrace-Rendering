@@ -1,7 +1,7 @@
 #include "../include/Plane.h"
 
 // constructor
-Plane::Plane(Vector3 position, Vector3 normal): Object(position), normal(normal) {}
+Plane::Plane(Vector3 position, Vector3 normal): Shape(position), normal(normal) {}
 
 RayHit* Plane::intersectsWith(const Ray& ray) const{
     // https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-plane-and-ray-disk-intersection

@@ -12,7 +12,7 @@
 #include <time.h>
 
 void computePrimRay(int i, int j, Ray& ray, const Camera& camera);
-Color traceRay(Ray& ray, const std::vector<Object*>& objects);
+Color traceRay(Ray& ray, const std::vector<Shape*>& objects);
 
 int main(void){
     // Doing this to generate random spheres
@@ -22,10 +22,11 @@ int main(void){
     Canvas canvas(800, 600);
     Camera camera(Vector3(0, 0, -100), canvas, PI/4);
 
-    std::vector<Object*> objects;
+    std::vector<Shape*> objects;
 
     for(int i=0; i < 5; i++){
         objects.push_back(new Sphere(Vector3(rand()%50-25, 15, rand()%50-25), 5));
+        std::cout << objects[i]->position << std::endl;
     }
     objects.push_back(new Plane(Vector3(0, 20, 0), Vector3(0, 1, 0)));
 
@@ -52,7 +53,7 @@ void computePrimRay(int i, int j, Ray& primRay, const Camera& camera){
     primRay.direction = (pixelPosition - camera.position).normalized();
 }
 
-Color traceRay(Ray& ray, const std::vector<Object*>& objects){
+Color traceRay(Ray& ray, const std::vector<Shape*>& objects){
     int n_objects = (int) objects.size();
 
     Color backgroundColor(0, 0, 0);

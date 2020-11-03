@@ -1,10 +1,10 @@
 #pragma once
 
 #include "headers.h"
-#include "Object.h"
+#include "Shape.h"
 #include "Ray.h"
 
-class Sphere: public Object
+class Sphere: public Shape
 {
 public:
     float radius;
