@@ -23,8 +23,8 @@ int main(void){
 
     std::vector<Sphere> objects;
 
-    for(int i=0; i < 10; i++){
-        objects.push_back(Sphere(Vector3(rand()%100-50, rand()%100-50, rand()%100-50), 10));
+    for(int i=0; i < 5; i++){
+        objects.push_back(Sphere(Vector3(rand()%50-25, rand()%50-25, rand()%50-25), 5));
     }
 
     image.open("image.ppm");
@@ -92,10 +92,10 @@ Color traceRay(Ray& ray, const std::vector<Sphere>& objects){
     }
 
     float distanceToLight = (light.position - closestHit->point).magnitude();
-    float maxDistance = 300;
+    float maxDistance = 30; // this is the maximum distance still visible by light
     if(distanceToLight > maxDistance) distanceToLight = maxDistance;
-    char R = (char) (255 * distanceToLight / maxDistance);
-    char G = (char) (255 * distanceToLight / maxDistance);
-    char B = (char) (255 * distanceToLight / maxDistance);
+    char R = (char) 255-(distanceToLight/maxDistance * 255);
+    char G = (char) 255-(distanceToLight/maxDistance * 255);
+    char B = (char) 255-(distanceToLight/maxDistance * 255);
     return Color(R, G, B);
 }
