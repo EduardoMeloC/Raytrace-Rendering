@@ -6,16 +6,26 @@
 #include "../include/Camera.h"
 
 #include <fstream>
+#include <vector>
+#include <limits>
+#include <time.h>
 
 void computePrimRay(int i, int j, Ray& ray, const Camera& camera);
+Color traceRay(Ray& ray, const std::vector<Sphere>& objects);
 
 int main(void){
+    // Doing this to generate random spheres
+    srand( (unsigned)time(NULL) );
+
     std::ofstream image;
     Canvas canvas(800, 600);
-    Camera camera(canvas, PI/4);
-    Color backgroundColor(0, 0, 0);
+    Camera camera(Vector3(0, 0, -100), canvas, PI/4);
 
-    Sphere sphere(Vector3(0, 0, 100), 30);
+    std::vector<Sphere> objects;
+
+    for(int i=0; i < 10; i++){
+        objects.push_back(Sphere(Vector3(rand()%100-50, rand()%100-50, rand()%100-50), 10));
+    }
 
     image.open("image.ppm");
         image << "P6" << " " << canvas.width << " " << canvas.height << " 255" << std::endl;
@@ -23,15 +33,8 @@ int main(void){
             for(int j = 0; j < canvas.width; j++){
                 Ray primRay;
                 computePrimRay(i, j, primRay, camera);
-                RayHit* hit = primRay.cast(sphere);
-                Color pixelColor = backgroundColor;
-                if(hit){
-                    pixelColor.r = (char) (255 * j / canvas.width);
-                    pixelColor.g = (char) (255 * i / canvas.height);
-                    pixelColor.b = 255;
-                }
+                Color pixelColor = traceRay(primRay, objects);
                 image << pixelColor.r << pixelColor.g << pixelColor.b;
-                delete hit;
             }
         }
     image.close();
@@ -40,7 +43,59 @@ int main(void){
 
 void computePrimRay(int i, int j, Ray& primRay, const Camera& camera){ 
     Canvas canvas = camera.canvas;
-    Vector3 pixelPosition(j + 0.5f - canvas.width/2, i + 0.5f - canvas.height/2, camera.focalLength);
+    Vector3 pixelPosition(j + 0.5f - canvas.width/2 + camera.position.x, 
+                          i + 0.5f - canvas.height/2 - camera.position.y,
+                          camera.focalLength);
     primRay.origin = camera.position;
     primRay.direction = (pixelPosition - camera.position).normalized();
+}
+
+Color traceRay(Ray& ray, const std::vector<Sphere>& objects){
+    int n_objects = (int) objects.size();
+
+    Color backgroundColor(0, 0, 0);
+    Color shadowColor(0, 0, 0);
+
+    Sphere light(Vector3(0, 0, 0), 1);
+
+    RayHit *closestHit = new RayHit(Vector3(0), Vector3(0), std::numeric_limits<float>::infinity());
+
+    for (int i = 0; i < n_objects; i++){
+        RayHit* hit = ray.cast(objects[i]);
+        if(hit){
+            if(hit->distance < closestHit->distance){
+                delete closestHit;
+                closestHit = hit;
+            }
+            else{
+                delete hit;
+            }
+        }
+    }
+    // render light
+    RayHit* hit = ray.cast(light);
+    if(hit){
+        delete hit;
+        return Color(255, 255, 255);
+    }
+
+    if (closestHit->distance == std::numeric_limits<float>::infinity())
+        return backgroundColor;
+
+    Ray shadowRay(closestHit->point, light.position - closestHit->point);
+    for (int i = 0; i < n_objects; i++){
+        RayHit* hit = shadowRay.cast(objects[i]);
+        if(hit){
+            delete hit;
+            return shadowColor;
+        }
+    }
+
+    float distanceToLight = (light.position - closestHit->point).magnitude();
+    float maxDistance = 300;
+    if(distanceToLight > maxDistance) distanceToLight = maxDistance;
+    char R = (char) (255 * distanceToLight / maxDistance);
+    char G = (char) (255 * distanceToLight / maxDistance);
+    char B = (char) (255 * distanceToLight / maxDistance);
+    return Color(R, G, B);
 }

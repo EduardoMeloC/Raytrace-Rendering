@@ -6,14 +6,10 @@
 
 struct RayHit
 {
-    friend struct Ray;
-    friend class Sphere;
-
     Vector3 point;
     Vector3 normal;
     float distance;
 
-protected:
     RayHit(const Vector3& point, const Vector3& normal, float distance);
 };
 
