@@ -12,8 +12,11 @@ public:
     //constructors
     Sphere(const Vector3& position, float radius); 
 
+    //destructor
+    ~Sphere();
+
     // virtual methods implementation
-    RayHit* intersectsWith(const Ray& ray) const override;
+    bool intersectsWith(const Ray& ray, RayHit& hit) const override;
 
 private:
     float radius2;

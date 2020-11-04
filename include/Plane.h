@@ -12,6 +12,9 @@ public:
     //constructors
     Plane(const Vector3& position, Vector3 normal); 
 
+    //destructor
+    ~Plane();
+
     // virtual methods implementation
-    RayHit* intersectsWith(const Ray& ray) const override;
+    bool intersectsWith(const Ray& ray, RayHit& hit) const override;
 };

@@ -41,6 +41,9 @@ int main(void){
             }
         }
     image.close();
+    for(int i=0; i < (int)objects.size() ; i++){
+        delete objects[i];
+    }
     return 0;
 }
 
@@ -61,41 +64,37 @@ Color traceRay(Ray& ray, const std::vector<Shape*>& objects){
 
     static Light light(Vector3(1, 0, 0), Color(255, 0, 0));
 
-    RayHit *closestHit = new RayHit(Vector3(0), Vector3(0), std::numeric_limits<float>::infinity());
+    RayHit hit(Vector3(0), Vector3(0), std::numeric_limits<float>::infinity());
+    bool isHit;
 
     for (int i = 0; i < n_objects; i++){
-        RayHit* hit = ray.cast(*objects[i]);
-        if(hit){
-            if(hit->distance < closestHit->distance){
-                delete closestHit;
-                closestHit = hit;
-            }
-            else{
-                delete hit;
+        RayHit closestHit;
+        isHit = ray.cast(*objects[i], closestHit);
+        if(isHit){
+            if(closestHit.distance < hit.distance){
+                hit = closestHit;
             }
         }
     }
     // render light
     Sphere lightSphere = Sphere(light.position, 1);
-    RayHit* hit = ray.cast(lightSphere);
-    if(hit){
-        delete hit;
+    isHit = ray.cast(lightSphere, hit);
+    if(isHit){
         return light.color;
     }
 
-    if (closestHit->distance == std::numeric_limits<float>::infinity())
+    if (hit.distance == std::numeric_limits<float>::infinity())
         return backgroundColor;
 
-    Ray shadowRay(closestHit->point, light.position - closestHit->point);
+    Ray shadowRay(hit.point, light.position - hit.point);
     for (int i = 0; i < n_objects; i++){
-        RayHit* hit = shadowRay.cast(*objects[i]);
-        if(hit){
-            delete hit;
+        isHit = shadowRay.cast(*objects[i], hit);
+        if(isHit){
             return shadowColor;
         }
     }
 
-    float distanceToLight = (light.position - closestHit->point).magnitude();
+    float distanceToLight = (light.position - hit.point).magnitude();
     float maxDistance = 64; // this is the maximum distance still visible by light
     if(distanceToLight > maxDistance) distanceToLight = maxDistance;
     char R = (char) (255-(distanceToLight/maxDistance * 255)) * light.color.r;

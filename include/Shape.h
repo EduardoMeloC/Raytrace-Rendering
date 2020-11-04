@@ -10,6 +10,7 @@ class Shape : public Object
 {
 public:
     Shape(const Vector3& position);
+    virtual ~Shape() = 0;
     // virtual methods
-    virtual RayHit* intersectsWith(const Ray& ray) const = 0;
+    virtual bool intersectsWith(const Ray& ray, RayHit& hit) const = 0;
 };

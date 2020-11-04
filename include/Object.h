@@ -6,7 +6,8 @@ class Object
 {
 public:
     Vector3 position;
-
     // constructors
     Object(const Vector3& position);
+    // destructors
+    virtual ~Object() = 0;
 };

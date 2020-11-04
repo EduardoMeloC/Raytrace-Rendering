@@ -4,6 +4,8 @@
 #include "Vector3.h"
 #include "Shape.h"
 
+#include <limits>
+
 struct RayHit
 {
     Vector3 point;
@@ -11,6 +13,7 @@ struct RayHit
     float distance;
 
     RayHit(const Vector3& point, const Vector3& normal, float distance);
+    RayHit();
 };
 
 struct Ray
@@ -23,5 +26,5 @@ struct Ray
     Ray();
 
     // methods
-   RayHit* cast(const Shape& object);
+    bool cast(const Shape& object, RayHit& hit);
 };
