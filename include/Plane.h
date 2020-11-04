@@ -10,7 +10,7 @@ public:
     Vector3 normal;
 
     //constructors
-    Plane(Vector3 position, Vector3 normal); 
+    Plane(const Vector3& position, Vector3 normal); 
 
     // virtual methods implementation
     RayHit* intersectsWith(const Ray& ray) const override;

@@ -5,6 +5,7 @@
 #include "../include/Canvas.h"
 #include "../include/Camera.h"
 #include "../include/Plane.h"
+#include "../include/Light.h"
 
 #include <fstream>
 #include <vector>
@@ -26,7 +27,6 @@ int main(void){
 
     for(int i=0; i < 5; i++){
         objects.push_back(new Sphere(Vector3(rand()%50-25, 15, rand()%50-25), 5));
-        std::cout << objects[i]->position << std::endl;
     }
     objects.push_back(new Plane(Vector3(0, 20, 0), Vector3(0, 1, 0)));
 
@@ -56,10 +56,10 @@ void computePrimRay(int i, int j, Ray& primRay, const Camera& camera){
 Color traceRay(Ray& ray, const std::vector<Shape*>& objects){
     int n_objects = (int) objects.size();
 
-    Color backgroundColor(0, 0, 0);
-    Color shadowColor(0, 0, 0);
+    static Color backgroundColor(0, 0, 0);
+    static Color shadowColor(0, 0, 0);
 
-    Sphere light(Vector3(0, 0, 0), 1);
+    static Light light(Vector3(1, 0, 0), Color(255, 0, 0));
 
     RayHit *closestHit = new RayHit(Vector3(0), Vector3(0), std::numeric_limits<float>::infinity());
 
@@ -76,10 +76,11 @@ Color traceRay(Ray& ray, const std::vector<Shape*>& objects){
         }
     }
     // render light
-    RayHit* hit = ray.cast(light);
+    Sphere lightSphere = Sphere(light.position, 1);
+    RayHit* hit = ray.cast(lightSphere);
     if(hit){
         delete hit;
-        return Color(255, 255, 255);
+        return light.color;
     }
 
     if (closestHit->distance == std::numeric_limits<float>::infinity())
@@ -97,8 +98,8 @@ Color traceRay(Ray& ray, const std::vector<Shape*>& objects){
     float distanceToLight = (light.position - closestHit->point).magnitude();
     float maxDistance = 64; // this is the maximum distance still visible by light
     if(distanceToLight > maxDistance) distanceToLight = maxDistance;
-    char R = (char) 255-(distanceToLight/maxDistance * 255);
-    char G = (char) 255-(distanceToLight/maxDistance * 255);
-    char B = (char) 255-(distanceToLight/maxDistance * 255);
+    char R = (char) (255-(distanceToLight/maxDistance * 255)) * light.color.r;
+    char G = (char) (255-(distanceToLight/maxDistance * 255)) * light.color.g;
+    char B = (char) (255-(distanceToLight/maxDistance * 255)) * light.color.b;
     return Color(R, G, B);
 }

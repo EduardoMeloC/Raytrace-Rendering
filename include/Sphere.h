@@ -10,7 +10,7 @@ public:
     float radius;
 
     //constructors
-    Sphere(Vector3 position, float radius); 
+    Sphere(const Vector3& position, float radius); 
 
     // virtual methods implementation
     RayHit* intersectsWith(const Ray& ray) const override;
