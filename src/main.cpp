@@ -14,59 +14,71 @@
 #include <algorithm>
 #include <time.h>
 
+float my_clamp(float min, float max, const float& value);
+
 void computePrimRay(int i, int j, Ray& ray, const Camera& camera);
-Color traceRay(Ray& ray, const std::vector<Shape*>& objects);
+Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects);
 
 int main(void){
     // Doing this to generate random spheres
     srand( (unsigned)time(NULL) );
 
-    Quaternion q;
-
     std::ofstream image;
     Canvas canvas(800, 600);
-    Camera camera(Vector3(0, 0, -100), canvas, PI/4);
+    Camera camera(Vector3(0, 0, 0), canvas, 90);
 
+    Vector3 *framebuffer = new Vector3[canvas.width * canvas.height];
+    Vector3 *pixelColor = framebuffer;
     std::vector<Shape*> objects;
 
     for(int i=0; i < 5; i++){
-        objects.push_back(new Sphere(Vector3(rand()%50-25, 15, rand()%50-25), 5));
+        objects.push_back(new Sphere(Vector3(rand()%50-25, 0, -rand()%50-25), 5));
     }
-    objects.push_back(new Plane(Vector3(0, 20, 0), Vector3(0, 1, 0)));
+    objects.push_back(new Plane(Vector3(0, -5, 0), Vector3(0, 1, 0))); 
+
+    for(int i = 0; i < canvas.height; i++){
+        for(int j = 0; j < canvas.width; j++){
+            Ray primRay;
+            computePrimRay(i, j, primRay, camera);
+            *(pixelColor++) = traceRay(primRay, objects);
+        }
+    }
 
     image.open("image.ppm");
-        image << "P6" << " " << canvas.width << " " << canvas.height << " 255" << std::endl;
-        for(int i = 0; i < canvas.height; i++){
-            for(int j = 0; j < canvas.width; j++){
-                Ray primRay;
-                computePrimRay(i, j, primRay, camera);
-                Color pixelColor = traceRay(primRay, objects);
-                image << pixelColor.r << pixelColor.g << pixelColor.b;
-            }
-        }
+    image << "P6" << " " << canvas.width << " " << canvas.height << " 255" << std::endl;
+    for(int i = 0; i < canvas.height * canvas.width; i++){
+        char r = (char)(255 * my_clamp(0.f, 1.f, framebuffer[i].x));
+        char g = (char)(255 * my_clamp(0.f, 1.f, framebuffer[i].y));
+        char b = (char)(255 * my_clamp(0.f, 1.f, framebuffer[i].z));
+        image << r << g << b;
+    }
     image.close();
+
     for(int i=0; i < (int)objects.size() ; i++){
         delete objects[i];
     }
+    delete [] framebuffer;
     return 0;
 }
 
 void computePrimRay(int i, int j, Ray& primRay, const Camera& camera){ 
     Canvas canvas = camera.canvas;
-    Vector3 pixelPosition(j + 0.5f - canvas.width/2 + camera.position.x, 
-                          i + 0.5f - canvas.height/2 - camera.position.y,
-                          camera.focalLength);
+    float imageAspectRatio = canvas.width / (float) canvas.height;
+    // We'll calculate the pixel's world coordinate
+    float pixelX = (2 * ((j + 0.5f) / (float)canvas.width) - 1) * tan(camera.fov/2 * PI/180) * imageAspectRatio;
+    float pixelY = (1 - 2 * ((i + 0.5f) / (float)canvas.height)) * tan(camera.fov/2 * PI/180);
+
     primRay.origin = camera.position;
-    primRay.direction = (pixelPosition - camera.position).normalized();
+    primRay.direction = (Vector3(pixelX, pixelY, -1) - camera.position).normalized();
 }
 
-Color traceRay(Ray& ray, const std::vector<Shape*>& objects){
+Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects){
     int n_objects = (int) objects.size();
 
     static Color backgroundColor(0, 0, 0);
     static Color shadowColor(0, 0, 0);
 
-    static Light light(Vector3(1, 0, 0));
+    static Light light(Vector3(20, 20, 0));
 
     RayHit hit(Vector3(0), Vector3(0), std::numeric_limits<float>::infinity());
     bool isHit;
@@ -94,15 +106,24 @@ Color traceRay(Ray& ray, const std::vector<Shape*>& objects){
     for (int i = 0; i < n_objects; i++){
         isHit = shadowRay.cast(*objects[i], hit);
         if(isHit){
+            /* std::cout << "returning shadow" << std::endl; */
             return shadowColor;
         }
     }
 
-    Vector3 point_light = (hit.point - light.position).normalized();
-    float lightValue = std::max(Vector3::dot(point_light, hit.point), 0.0f);
-    float lightIntensity = 5;
-    char R = (char) lightValue * lightIntensity;
-    char G = (char) lightValue * lightIntensity; 
-    char B = (char) lightValue * lightIntensity;
-    return Color(R, G, B);
+    Vector3 pointToLight = (light.position - hit.point).normalized();
+    float lightValue = std::max(Vector3::dot(pointToLight, hit.normal), 0.0f);
+    float lightIntensity = 1.5;
+    float R = lightValue * lightIntensity;
+    float G = lightValue * lightIntensity;
+    float B = lightValue * lightIntensity;
+    /* std::cout << "returning object's color: " << Vector3(R, G, B) << std::endl; */
+    return Vector3(R, G, B);;
+}
+
+float my_clamp(float min, float max, const float& value){
+    float clamped = value;
+    if(clamped < min) clamped = min;
+    if(clamped > max) clamped = max;
+    return clamped;
 }

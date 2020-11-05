@@ -3,8 +3,7 @@
 #include "Vector3.h"
 
 struct Quaternion{
-    float x, y, z, w;
-
+    friend class Object;
     Quaternion(float x, float y, float z, float w);
     Quaternion();
 
@@ -17,10 +16,14 @@ struct Quaternion{
     const Vector3 getEulerAngles() const;
     void setEulerAngles(const Vector3& angle);
     void setEulerAngles(float x, float y, float z);
+
+    // to string
+    friend std::ostream& operator<<(std::ostream& Str, Quaternion const& q){
+        Str << "(" << q.w << ", " << q.x << ", " << q.y <<  ", " << q.z << ")";
+        return Str;
+    } 
+
+private:
+    float x, y, z, w;
 };
 
-// to string
-inline std::ostream& operator<<(std::ostream& Str, Quaternion const& q){
-    Str << "(" << q.w << ", " << q.x << ", " << q.y <<  ", " << q.z << ")";
-    return Str;
-} 
