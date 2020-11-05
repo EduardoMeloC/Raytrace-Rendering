@@ -6,6 +6,7 @@
 #include "../include/Camera.h"
 #include "../include/Plane.h"
 #include "../include/Light.h"
+#include "../include/Quaternion.h"
 
 #include <fstream>
 #include <vector>
@@ -19,6 +20,8 @@ Color traceRay(Ray& ray, const std::vector<Shape*>& objects);
 int main(void){
     // Doing this to generate random spheres
     srand( (unsigned)time(NULL) );
+
+    Quaternion q;
 
     std::ofstream image;
     Canvas canvas(800, 600);

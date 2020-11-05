@@ -27,8 +27,8 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 	@echo " $(CC) $(CFLAGS) $(INC) -c -o $@ $<"; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
 
 # Tests
-tester:
-	$(CC) $(CFLAGS) test/tester.cpp $(INC) $(LIB) -o bin/tester
+tester: $(OBJECTS)
+	$(CC) $(filter-out build/main.o, $(^)) $(CFLAGS) test/tester.cpp $(LIB) -o bin/tester
 
 .PHONY: clean
 
