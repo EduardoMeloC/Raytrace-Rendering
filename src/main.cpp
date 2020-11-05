@@ -78,7 +78,7 @@ Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects){
     static Color backgroundColor(0, 0, 0);
     static Color shadowColor(0, 0, 0);
 
-    static Light light(Vector3(20, 20, 0));
+    static Light light(Vector3(0, 6, -25));
 
     RayHit hit(Vector3(0), Vector3(0), std::numeric_limits<float>::infinity());
     bool isHit;
@@ -96,7 +96,7 @@ Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects){
     Sphere lightSphere = Sphere(light.position, 1);
     isHit = ray.cast(lightSphere, hit);
     if(isHit){
-        return light.color;
+        return Vector3(1);
     }
 
     if (hit.distance == std::numeric_limits<float>::infinity())
@@ -113,10 +113,11 @@ Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects){
 
     Vector3 pointToLight = (light.position - hit.point).normalized();
     float lightValue = std::max(Vector3::dot(pointToLight, hit.normal), 0.0f);
-    float lightIntensity = 1.5;
-    float R = lightValue * lightIntensity;
-    float G = lightValue * lightIntensity;
-    float B = lightValue * lightIntensity;
+    float lightIntensity = 2.5;
+    float pointLightRadius = 0.7;
+    float R = lightValue * lightIntensity / (4 * PI * pointLightRadius * pointLightRadius);
+    float G = lightValue * lightIntensity / (4 * PI * pointLightRadius * pointLightRadius);
+    float B = lightValue * lightIntensity / (4 * PI * pointLightRadius * pointLightRadius);
     /* std::cout << "returning object's color: " << Vector3(R, G, B) << std::endl; */
     return Vector3(R, G, B);;
 }
