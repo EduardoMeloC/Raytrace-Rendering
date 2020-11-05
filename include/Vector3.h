@@ -19,7 +19,12 @@ struct Vector3
     Vector3& operator+=(const Vector3& other);
     Vector3& operator-=(const Vector3& other);
     Vector3 operator*(const float& value) const;
+    Vector3 operator*(const Vector3& other) const;
     Vector3 operator/(const float& value) const;
+
+    // acess operators
+    const float& operator[](uint8_t i) const;
+    float& operator[](uint8_t i);
 
     // static methods
     static float dot(const Vector3& u, const Vector3& v);

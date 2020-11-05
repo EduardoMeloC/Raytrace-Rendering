@@ -8,6 +8,7 @@ class Light : public Object
 {
 public:
     Color color;
+    float intensity;
 
     //constructors 
     Light(const Vector3& position, const Color& color);

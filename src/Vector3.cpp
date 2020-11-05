@@ -34,8 +34,19 @@ Vector3 Vector3::operator*(const float& value) const{
     return Vector3(x * value, y * value, z * value);
 }
 
+Vector3 Vector3::operator*(const Vector3& other) const{
+    return Vector3::dot(*this, other);
+}
+
 Vector3 Vector3::operator/(const float& value) const{
     return Vector3(x / value, y / value, z / value);
+}
+
+const float& Vector3::operator[](uint8_t i) const{
+    return (&x)[i];
+}
+float& Vector3::operator[](uint8_t i) {
+    return (&x)[i];
 }
 
 // STATIC METHODS

@@ -10,6 +10,7 @@
 #include <fstream>
 #include <vector>
 #include <limits>
+#include <algorithm>
 #include <time.h>
 
 void computePrimRay(int i, int j, Ray& ray, const Camera& camera);
@@ -62,7 +63,7 @@ Color traceRay(Ray& ray, const std::vector<Shape*>& objects){
     static Color backgroundColor(0, 0, 0);
     static Color shadowColor(0, 0, 0);
 
-    static Light light(Vector3(1, 0, 0), Color(255, 0, 0));
+    static Light light(Vector3(1, 0, 0));
 
     RayHit hit(Vector3(0), Vector3(0), std::numeric_limits<float>::infinity());
     bool isHit;
@@ -94,11 +95,11 @@ Color traceRay(Ray& ray, const std::vector<Shape*>& objects){
         }
     }
 
-    float distanceToLight = (light.position - hit.point).magnitude();
-    float maxDistance = 64; // this is the maximum distance still visible by light
-    if(distanceToLight > maxDistance) distanceToLight = maxDistance;
-    char R = (char) (255-(distanceToLight/maxDistance * 255)) * light.color.r;
-    char G = (char) (255-(distanceToLight/maxDistance * 255)) * light.color.g;
-    char B = (char) (255-(distanceToLight/maxDistance * 255)) * light.color.b;
+    Vector3 point_light = (hit.point - light.position).normalized();
+    float lightValue = std::max(Vector3::dot(point_light, hit.point), 0.0f);
+    float lightIntensity = 5;
+    char R = (char) lightValue * lightIntensity;
+    char G = (char) lightValue * lightIntensity; 
+    char B = (char) lightValue * lightIntensity;
     return Color(R, G, B);
 }
