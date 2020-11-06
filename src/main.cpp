@@ -5,7 +5,7 @@
 #include "../include/Canvas.h"
 #include "../include/Camera.h"
 #include "../include/Plane.h"
-#include "../include/Light.h"
+#include "../include/PointLight.h"
 #include "../include/Quaternion.h"
 
 #include <fstream>
@@ -78,7 +78,7 @@ Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects){
     static Color backgroundColor(0, 0, 0);
     static Color shadowColor(0, 0, 0);
 
-    static Light light(Vector3(0, 6, -25));
+    static PointLight light(Vector3(0, 6, -25));
 
     RayHit hit(Vector3(0), Vector3(0), std::numeric_limits<float>::infinity());
     bool isHit;

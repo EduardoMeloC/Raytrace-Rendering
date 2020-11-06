@@ -11,6 +11,8 @@ public:
     float intensity;
 
     //constructors 
-    Light(const Vector3& position, const Color& color);
+    Light(const Vector3& position, const Color& color, float intensity);
     Light(const Vector3& position);
+    //destructor
+    virtual ~Light();
 };
