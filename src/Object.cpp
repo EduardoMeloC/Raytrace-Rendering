@@ -1,8 +1,11 @@
 #include "../include/Object.h"
 
-Object::Object(const Vector3& position, const Quaternion& rotation, const Vector3& scale) : position(position), rotation(rotation), scale(scale) {}
-Object::Object(const Vector3& position) : Object::Object(position, Quaternion(), Vector3(0)) {}
-Object::Object() : Object::Object(Vector3(0), Quaternion(), Vector3(0)) {} 
+Object::Object(const Vector3& position, const Quaternion& rotation, const Vector3& scale, const Color& albedo) : position(position), rotation(rotation), scale(scale), albedo(albedo) {
+    updateObjectMatrix();
+}
+
+Object::Object(const Vector3& position) : Object::Object(position, Quaternion(), Vector3(1), Color(255)) {}
+Object::Object() : Object::Object(Vector3(0)) {} 
 Object::~Object() {}
 
 void Object::getObjectMatrix(Matrix4x4& m){
@@ -16,22 +19,26 @@ void Object::getObjectMatrix(Matrix4x4& m){
     
     // Assigning the first column
     m[0][0] = ( 1 - ( yy + zz ) ) * sx;
-    m[0][1] = ( xy + wz ) * sx;
-    m[0][2] = ( xz - wy ) * sx;
-    m[0][3] = 0;
+    m[1][0] = ( xy + wz ) * sx;
+    m[2][0] = ( xz - wy ) * sx;
+    m[3][0] = 0;
     // Assigning the second column
-    m[1][0] = ( xy - wz ) * sy;
+    m[0][1] = ( xy - wz ) * sy;
     m[1][1] = ( 1 - ( xx + zz ) ) * sy;
-    m[1][2] = ( yz + wx ) * sy;
-    m[1][3] = 0;
+    m[2][1] = ( yz + wx ) * sy;
+    m[3][1] = 0;
     // Assigning the third column
-    m[2][0] = ( xz + wy ) * sz;
-    m[2][1] = ( yz - wx ) * sz;
+    m[0][2] = ( xz + wy ) * sz;
+    m[1][2] = ( yz - wx ) * sz;
     m[2][2] = ( 1 - ( xx + yy ) ) * sz;
-    m[2][3] = 0;
+    m[3][2] = 0;
     // Assigning the fourth column
-    m[3][0] = position.x;
-    m[3][1] = position.y;
-    m[3][2] = position.z;
+    m[0][3] = position.x;
+    m[1][3] = position.y;
+    m[2][3] = position.z;
     m[3][3] = 1;
+}
+
+void Object::updateObjectMatrix(){
+    getObjectMatrix(objectToWorld);
 }

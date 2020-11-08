@@ -32,5 +32,6 @@ bool Sphere::intersectsWith(const Ray& ray, RayHit& hit) const{
     hit.point = point;
     hit.normal = normal;
     hit.distance = distance;
+    hit.hitObject = this;
     return true;
 }

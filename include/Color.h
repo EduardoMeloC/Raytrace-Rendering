@@ -4,9 +4,10 @@
 
 struct Color{
     // each value ranges from 0 to 255
-    char r, g, b;
+    unsigned char r, g, b;
 
-    Color(char r, char g, char b);
+    Color(unsigned char r, unsigned char g, unsigned char b);
+    Color(unsigned char value);
 
     //cast to vector3
     operator Vector3() const;

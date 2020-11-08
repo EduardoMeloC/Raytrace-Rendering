@@ -3,6 +3,7 @@
 #include "headers.h"
 #include "Shape.h"
 #include "Ray.h"
+#include "Color.h"
 
 class Sphere: public Shape
 {

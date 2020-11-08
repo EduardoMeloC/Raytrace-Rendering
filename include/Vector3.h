@@ -45,3 +45,6 @@ inline std::ostream& operator<<(std::ostream& Str, Vector3 const& v){
     Str << "(" << v.x << ", " << v.y << ", " << v.z << ")";
     return Str;
 } 
+
+
+

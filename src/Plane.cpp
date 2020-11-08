@@ -17,6 +17,7 @@ bool Plane::intersectsWith(const Ray& ray, RayHit& hit) const{
         hit.point = hitPoint;
         hit.normal = hitNormal;
         hit.distance = t;
+        hit.hitObject = this;
         return true;
     }
     return false;
