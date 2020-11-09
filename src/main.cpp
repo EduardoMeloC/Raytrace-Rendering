@@ -21,29 +21,33 @@ void computePrimRay(int i, int j, Ray& ray, const Camera& camera);
 Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector<Light*>& lights);
 
 int main(void){
-    // Doing this to generate random spheres
+    // Doing this to generate random numbers 
     srand( (unsigned)time(NULL) );
 
+    // Image and Camera
     std::ofstream image;
     Canvas canvas(1280, 720);
     Camera camera(Vector3(0, 0, 0), canvas, 60);
-
     Vector3 *framebuffer = new Vector3[canvas.width * canvas.height];
     Vector3 *pixelColor = framebuffer;
-    std::vector<Shape*> objects;
 
+    // Objects
+    std::vector<Shape*> objects;
     for(int i=0; i < 5; i++){
+        // note that the spheres might self intersect
+        // solving this is left as an exercise for the reader
         objects.push_back(new Sphere(Vector3(rand()%100-50, 0, -(rand()%100-50)-60), 5));
         objects[i]->albedo = Color(rand()%255, rand()%255, rand()%255);
     }
     objects.push_back(new Plane(Vector3(0, -5, 0), Vector3(0, 1, 0))); 
-    /* objects.push_back(new Plane(Vector3(-20, 0, 0), Vector3(1, 0, 0))); */ 
 
+    // Lights
     std::vector<Light*> lights;
-    lights.push_back(new PointLight(Vector3(-20, 20, -50), Color(255, 0, 255), 120));
-    lights.push_back(new PointLight(Vector3(20, 20, -50), Color(0, 255, 255), 120));
-    /* lights.push_back(new DirectionalLight(Vector3(-0.5, -1, -1), Color(255), 0.1)); */
+    lights.push_back(new PointLight(Vector3(-20, 20, -50), Color(255, 0, 255), 320));
+    lights.push_back(new PointLight(Vector3(20, 20, -50), Color(0, 255, 255), 320));
+    lights.push_back(new DirectionalLight(Vector3(0, 0, -1), Color(255), 0.03));
 
+    // Render on the frame buffer
     for(int i = 0; i < canvas.height; i++){
         for(int j = 0; j < canvas.width; j++){
             Ray primRay;
@@ -52,6 +56,7 @@ int main(void){
         }
     }
 
+    // Write image to the output file
     image.open("image.ppm");
     image << "P6" << " " << canvas.width << " " << canvas.height << " 255" << std::endl;
     for(int i = 0; i < canvas.height * canvas.width; i++){
@@ -62,6 +67,7 @@ int main(void){
     }
     image.close();
 
+    // Free memory
     for(int i=0; i < (int)objects.size() ; i++){
         delete objects[i];
     }
@@ -125,26 +131,15 @@ Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector
             // this if makes shadowRay's max length be the distance to light
             if(shadowHit.distance > (light->position - shadowRay.origin).magnitude()) continue;
             if(isHit){
-                /* std::cout << "returning shadow" << std::endl; */
                 shadowValue = static_cast<Vector3>(shadowColor) / 255;
             }
         }
 
-        /* Vector3 pointToLight = (light->position - hit.point).normalized(); */
-        /* std::cout << lightDir << std::endl << lightIntensity << std::endl; */
-        /* float lightValue = std::max(Vector3::dot(pointToLight, hit.normal), 0.0f); */
         float lightValue = std::max(hit.normal * (lightDir * -1), 0.f);
         Vector3 hitAlbedo = static_cast<Vector3>(hit.hitObject->albedo) / 255;
-        /* Vector3 lightColor = static_cast<Vector3>(light->color) / 255; */
-        /* float R = lightValue * lightIntensity / (4 * PI * pointLightRadius * pointLightRadius); */
-        /* float G = lightValue * lightIntensity / (4 * PI * pointLightRadius * pointLightRadius); */
-        /* float B = lightValue * lightIntensity / (4 * PI * pointLightRadius * pointLightRadius); */
-        /* std::cout << "returning object's color: " << Vector3(R, G, B) << std::endl; */
         hitColor.x += hitAlbedo.x / PI * lightIntensity.x * lightValue * shadowValue.x;
         hitColor.y += hitAlbedo.y / PI * lightIntensity.y * lightValue * shadowValue.y;
         hitColor.z += hitAlbedo.z / PI * lightIntensity.z * lightValue * shadowValue.z;
-
-        /* std::cout << Vector3(R, G, B) << std::endl; */
     }
 
     return hitColor;
