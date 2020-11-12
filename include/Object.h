@@ -13,10 +13,8 @@ public:
     Vector3 scale;
     Matrix4x4 objectToWorld;
 
-    // TODO: Separate classes for objects and transforms
-    Color albedo;
     // constructors
-    Object(const Vector3& position, const Quaternion& quaternion, const Vector3& scale, const Color& color);
+    Object(const Vector3& position, const Quaternion& quaternion, const Vector3& scale);
     Object(const Vector3& position);
     Object();
     // destructors

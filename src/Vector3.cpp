@@ -70,6 +70,18 @@ Vector3 Vector3::cross(const Vector3& u, const Vector3& v) {
                    u.x*v.y - u.y*v.z);
 }
 
+Vector3 Vector3::random(){
+    return Vector3(randomFloat(), randomFloat(), randomFloat());
+}
+
+Vector3 Vector3::random(float min, float max){
+    return Vector3(randomFloat(min,max), randomFloat(min,max), randomFloat(min, max)); 
+}
+
+Vector3 Vector3::reflect(const Vector3& v, const Vector3& normal){
+    return v - normal * 2 * dot(v, normal);
+}
+
 // INSTANCE METHODS
 float Vector3::dot(const Vector3& other) const{
     return dot(*this, other);

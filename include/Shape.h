@@ -6,11 +6,19 @@
 class Ray;
 class RayHit;
 
+enum class Material {diffuse, reflection, reflectionAndRefraction};
+
 class Shape : public Object
 {
 public:
     Shape(const Vector3& position);
+    Shape(const Vector3& position, const Color& albedo);
+    Shape(const Vector3& position, const Color& albedo, const Material& material);
     virtual ~Shape() = 0;
+
+    Color albedo;
+
+    Material material;
     // virtual methods
     virtual bool intersectsWith(const Ray& ray, RayHit& hit) const = 0;
 };

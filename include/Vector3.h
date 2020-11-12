@@ -31,6 +31,9 @@ struct Vector3
     static float magnitude(const Vector3& v);
     static Vector3 normalize(Vector3& v); // makes the vector normalized
     static Vector3 cross(const Vector3& u, const Vector3& v);
+    static Vector3 random();
+    static Vector3 random(float min, float max);
+    static Vector3 reflect(const Vector3& v, const Vector3& normal);
 
     // instance methods
     float dot(const Vector3& other) const;

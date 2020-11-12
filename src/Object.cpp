@@ -1,10 +1,10 @@
 #include "../include/Object.h"
 
-Object::Object(const Vector3& position, const Quaternion& rotation, const Vector3& scale, const Color& albedo) : position(position), rotation(rotation), scale(scale), albedo(albedo) {
+Object::Object(const Vector3& position, const Quaternion& rotation, const Vector3& scale) : position(position), rotation(rotation), scale(scale) {
     updateObjectMatrix();
 }
 
-Object::Object(const Vector3& position) : Object::Object(position, Quaternion(), Vector3(1), Color(255)) {}
+Object::Object(const Vector3& position) : Object::Object(position, Quaternion(), Vector3(1)) {}
 Object::Object() : Object::Object(Vector3(0)) {} 
 Object::~Object() {}
 

@@ -8,12 +8,12 @@
 
 struct RayHit
 {
-    const Object* hitObject;
+    const Shape* hitObject;
     Vector3 point;
     Vector3 normal;
     float distance;
 
-    RayHit(const Vector3& point, const Vector3& normal, float distance, const Object* hitObject);
+    RayHit(const Vector3& point, const Vector3& normal, float distance, const Shape* hitObject);
     RayHit();
 };
 

@@ -15,15 +15,14 @@
 #include <algorithm>
 #include <time.h>
 
-float my_clamp(float min, float max, const float& value);
-
 void computePrimRay(int i, int j, Ray& ray, const Camera& camera);
-Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector<Light*>& lights);
+Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector<Light*>& lights, const int& depth);
+
+// TODO: Refraction, Fresnel
+// TODO: Camera LookAt
+// TODO: Apply textures
 
 int main(void){
-    // Doing this to generate random numbers 
-    srand( (unsigned)time(NULL) );
-
     // Image and Camera
     std::ofstream image;
     Canvas canvas(1280, 720);
@@ -34,25 +33,34 @@ int main(void){
     // Objects
     std::vector<Shape*> objects;
     for(int i=0; i < 5; i++){
-        // note that the spheres might self intersect
-        // solving this is left as an exercise for the reader
-        objects.push_back(new Sphere(Vector3(rand()%100-50, 0, -(rand()%100-50)-60), 5));
-        objects[i]->albedo = Color(rand()%255, rand()%255, rand()%255);
+        // note that the spheres might intersect with themselves
+        Vector3 randomPosition(randomFloat(-50, 50), 0, -randomFloat(-25, 25) + -75);
+        for(int j=0; j < (int)objects.size(); j++){
+            // avoid self intersection
+            if((objects[j]->position - randomPosition).magnitude() < 10.f){
+                randomPosition = Vector3(randomFloat(-50, 50), 0, -randomFloat(-25, 25) + -75);
+                j=0;
+            }
+        }
+        objects.push_back(new Sphere(randomPosition, 5));
+        objects[i]->albedo = Color(randomFloat(0, 255), randomFloat(0, 255), randomFloat(0, 255));
     }
     objects.push_back(new Plane(Vector3(0, -5, 0), Vector3(0, 1, 0))); 
+    objects[4]->material = Material::reflection;
 
     // Lights
     std::vector<Light*> lights;
-    lights.push_back(new PointLight(Vector3(-20, 20, -50), Color(255, 0, 255), 320));
-    lights.push_back(new PointLight(Vector3(20, 20, -50), Color(0, 255, 255), 320));
-    lights.push_back(new DirectionalLight(Vector3(0, 0, -1), Color(255), 0.03));
+    lights.push_back(new PointLight(Vector3(-20, 20, -50), Color(255, 0, 255), 420));
+    lights.push_back(new PointLight(Vector3(20, 20, -50), Color(0, 255, 255), 420));
+    lights.push_back(new PointLight(Vector3(0, 20, -20*sqrt(3)), Color(255, 255, 205), 180));
+    /* lights.push_back(new DirectionalLight(Vector3(0, 0, -1), Color(255), 0.03)); */
 
     // Render on the frame buffer
     for(int i = 0; i < canvas.height; i++){
         for(int j = 0; j < canvas.width; j++){
             Ray primRay;
             computePrimRay(i, j, primRay, camera);
-            *(pixelColor++) = traceRay(primRay, objects, lights);
+            *(pixelColor++) = traceRay(primRay, objects, lights, 2);
         }
     }
 
@@ -86,7 +94,7 @@ void computePrimRay(int i, int j, Ray& primRay, const Camera& camera){
     primRay.direction = (Vector3(pixelX, pixelY, -1) - camera.position).normalized();
 }
 
-Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector<Light*>& lights){
+Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector<Light*>& lights, const int& depth){
     static float shadowBias = 1e-4;
     static int n_objects = (int) objects.size();
     static int n_lights = (int) lights.size();
@@ -96,6 +104,8 @@ Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector
 
     RayHit hit;
     bool isHit;
+
+    if(depth <= 0) return backgroundColor;
 
     for (int i = 0; i < n_objects; i++){
         RayHit closestHit;
@@ -113,8 +123,9 @@ Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector
         if(lights[i]->renderLight(ray, hitColor)) return hitColor;
     }
 
-    if (hit.distance == std::numeric_limits<float>::infinity())
+    if (hit.distance == std::numeric_limits<float>::infinity()){
         return backgroundColor;
+    }
 
     for(int i = 0; i < n_lights; i++){
         Light* light = lights[i];
@@ -124,6 +135,7 @@ Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector
         Vector3 lightDir, lightIntensity;
         light->getDirectionAndIntensity(hit.point, lightDir, lightIntensity);
 
+        // Hard Shadow
         Ray shadowRay(hit.point + hit.normal * shadowBias, lightDir * -1);
         RayHit shadowHit;
         for (int i = 0; i < n_objects; i++){
@@ -135,19 +147,30 @@ Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector
             }
         }
 
-        float lightValue = std::max(hit.normal * (lightDir * -1), 0.f);
-        Vector3 hitAlbedo = static_cast<Vector3>(hit.hitObject->albedo) / 255;
-        hitColor.x += hitAlbedo.x / PI * lightIntensity.x * lightValue * shadowValue.x;
-        hitColor.y += hitAlbedo.y / PI * lightIntensity.y * lightValue * shadowValue.y;
-        hitColor.z += hitAlbedo.z / PI * lightIntensity.z * lightValue * shadowValue.z;
+        switch(hit.hitObject->material){
+            case Material::diffuse: {
+                float lightValue = std::max(hit.normal * (lightDir * -1), 0.f);
+                Vector3 hitAlbedo = static_cast<Vector3>(hit.hitObject->albedo) / 255;
+                hitColor.x += hitAlbedo.x / PI * lightIntensity.x * lightValue * shadowValue.x;
+                hitColor.y += hitAlbedo.y / PI * lightIntensity.y * lightValue * shadowValue.y;
+                hitColor.z += hitAlbedo.z / PI * lightIntensity.z * lightValue * shadowValue.z;
+                break;
+            }
+            case Material::reflection: {
+                Vector3 reflectionOrig = hit.point + hit.normal * shadowBias;
+                Vector3 reflectionDir = Vector3::reflect(ray.direction, hit.normal);
+                Ray reflectionRay = Ray(reflectionOrig, reflectionDir);
+                hitColor += traceRay(reflectionRay, objects, lights, depth - 1) * 0.8f;
+                break;
+            }
+            case Material::reflectionAndRefraction: {
+                std::cout << "not implemented yet!" << std::endl;
+                break;      
+            }
+        }
     }
-
-    return hitColor;
+    Vector3 indirectLightColor;
+    // Soft Shadow
+    return hitColor - indirectLightColor;
 }
 
-float my_clamp(float min, float max, const float& value){
-    float clamped = value;
-    if(clamped < min) clamped = min;
-    if(clamped > max) clamped = max;
-    return clamped;
-}
