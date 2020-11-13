@@ -24,7 +24,7 @@ void fresnel(const Vector3& incidentRay, const Vector3& surfaceNormal, const flo
 // TODO: Camera LookAt
 // TODO: Apply textures
 
-#define GLASS_SCENE
+#define MIRROR_SCENE
 
 int main(void){
     // Image and Camera
@@ -68,13 +68,13 @@ objects.push_back(new Sphere(Vector3(0, 0, -45), 5));
 #endif
     objects.push_back(new Plane(Vector3(0, -5, 0), Vector3(0, 1, 0))); 
 
-
     // Lights
     std::vector<Light*> lights;
     lights.push_back(new PointLight(Vector3(-20, 20, -50), Color(255, 0, 255), 420));
     lights.push_back(new PointLight(Vector3(20, 20, -50), Color(0, 255, 255), 420));
     lights.push_back(new PointLight(Vector3(0, 20, -20*sqrt(3)), Color(255, 255, 205), 180));
-    /* lights.push_back(new DirectionalLight(Vector3(0, 0, -1), Color(255), 0.03)); */
+    /* lights.push_back(new DirectionalLight(Vector3(0, -1, 0), Color(255), 0.03)); */
+    /* lights.push_back(new DirectionalLight(Vector3(0, -1, -1), Color(255), 0.03)); */
 
     // Render on the frame buffer
     for(int i = 0; i < canvas.height; i++){
@@ -121,7 +121,7 @@ Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector
     static int n_lights = (int) lights.size();
 
     static Color backgroundColor(0, 0, 0);
-    static Color shadowColor(255, 0, 0);
+    static Color shadowColor(0, 0, 0);
 
     RayHit hit;
     bool isHit;
@@ -148,69 +148,67 @@ Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector
         return backgroundColor;
     }
 
-    for(int i = 0; i < n_lights; i++){
-        Light* light = lights[i];
 
-        Vector3 shadowValue = Vector3(1);
+    switch(hit.hitObject->material){
+        case Material::diffuse: {
+            for(int i = 0; i < n_lights; i++){
+                Light* light = lights[i];
 
-        Vector3 lightDir, lightIntensity;
-        light->getDirectionAndIntensity(hit.point, lightDir, lightIntensity);
+                Vector3 shadowValue = Vector3(1);
 
-        // Hard Shadow
-        Ray shadowRay(hit.point + hit.normal * shadowBias, lightDir * -1);
-        RayHit shadowHit;
-        for (int i = 0; i < n_objects; i++){
-            isHit = shadowRay.cast(*objects[i], shadowHit);
-            // this if makes shadowRay's max length be the distance to light
-            if(shadowHit.distance > (light->position - shadowRay.origin).magnitude()) continue;
-            if(isHit){
-                shadowValue = static_cast<Vector3>(shadowColor) / 255;
-            }
-        }
+                Vector3 lightDir, lightIntensity;
+                light->getDirectionAndIntensity(hit.point, lightDir, lightIntensity);
 
-        switch(hit.hitObject->material){
-            case Material::diffuse: {
+                // Hard Shadow
+                Ray shadowRay(hit.point + hit.normal * shadowBias, lightDir * -1);
+                RayHit shadowHit;
+                for (int i = 0; i < n_objects; i++){
+                    isHit = shadowRay.cast(*objects[i], shadowHit);
+                    // this if makes shadowRay's max length be the distance to light
+                    if(shadowHit.distance > (light->position - shadowRay.origin).magnitude()) continue;
+                    if(isHit){
+                        shadowValue = static_cast<Vector3>(shadowColor) / 255;
+                    }
+                }
                 float lightValue = std::max(hit.normal * (lightDir * -1), 0.f);
                 Vector3 hitAlbedo = static_cast<Vector3>(hit.hitObject->albedo) / 255;
                 hitColor.x += hitAlbedo.x / PI * lightIntensity.x * lightValue * shadowValue.x;
                 hitColor.y += hitAlbedo.y / PI * lightIntensity.y * lightValue * shadowValue.y;
                 hitColor.z += hitAlbedo.z / PI * lightIntensity.z * lightValue * shadowValue.z;
-                break;
             }
-            case Material::reflection: {
-                Vector3 reflectionOrig = hit.point + hit.normal * shadowBias;
-                Vector3 reflectionDir = Vector3::reflect(ray.direction, hit.normal);
-                Ray reflectionRay = Ray(reflectionOrig, reflectionDir);
-                hitColor += traceRay(reflectionRay, objects, lights, depth - 1) * 0.8f;
-                break;
+            break;
+        }
+        case Material::reflection: {
+            Vector3 reflectionOrig = hit.point + hit.normal * shadowBias;
+            Vector3 reflectionDir = Vector3::reflect(ray.direction, hit.normal);
+            Ray reflectionRay = Ray(reflectionOrig, reflectionDir);
+            hitColor += traceRay(reflectionRay, objects, lights, depth - 1) * powf(0.8f, n_lights);
+            break;
+        }
+        case Material::reflectionAndRefraction: {
+            // I must confess I don't quite understand this part
+            Vector3 refractionColor = 0, reflectionColor = 0;
+            float kr;
+            fresnel(ray.direction, hit.normal, hit.hitObject->refractiveIndex, kr);
+            bool isOutside = ray.direction.dot(hit.normal) < 0;
+            Vector3 bias = hit.normal * shadowBias;
+            // compute refraction if it's not a case of internal reflection
+            if(kr < 1) {
+                Vector3 refractionDirection = refract(ray.direction, hit.normal, hit.hitObject->refractiveIndex).normalized();
+                Vector3 refractionRayOrig = isOutside ? hit.point - bias : hit.point + bias;
+                Ray refractionRay(refractionRayOrig, refractionDirection);
+                refractionColor = traceRay(refractionRay, objects, lights, depth-1);
             }
-            case Material::reflectionAndRefraction: {
-                // I must confess I don't quite understand this part
-                Vector3 refractionColor = 0, reflectionColor = 0;
-                float kr;
-                fresnel(ray.direction, hit.normal, hit.hitObject->refractiveIndex, kr);
-                bool isOutside = ray.direction.dot(hit.normal) < 0;
-                Vector3 bias = hit.normal * shadowBias;
-                // compute refraction if it's not a case of internal reflection
-                if(kr < 1) {
-                    Vector3 refractionDirection = refract(ray.direction, hit.normal, hit.hitObject->refractiveIndex).normalized();
-                    Vector3 refractionRayOrig = isOutside ? hit.point - bias : hit.point + bias;
-                    Ray refractionRay(refractionRayOrig, refractionDirection);
-                    refractionColor = traceRay(refractionRay, objects, lights, depth-1);
-                }
-                Vector3 reflectionDirection = Vector3::reflect(ray.direction, hit.normal).normalized();
-                Vector3 reflectionRayOrig = isOutside ? hit.point + bias : hit.point - bias;
-                Ray reflectionRay(reflectionRayOrig, reflectionDirection);
-                reflectionColor = traceRay(reflectionRay, objects, lights, depth-1);
+            Vector3 reflectionDirection = Vector3::reflect(ray.direction, hit.normal).normalized();
+            Vector3 reflectionRayOrig = isOutside ? hit.point + bias : hit.point - bias;
+            Ray reflectionRay(reflectionRayOrig, reflectionDirection);
+            reflectionColor = traceRay(reflectionRay, objects, lights, depth-1);
 
-                hitColor += reflectionColor * kr + refractionColor * (1 - kr);
-                break;      
-            }
+            hitColor += reflectionColor * kr + refractionColor * (1 - kr);
+            break;      
         }
     }
-    Vector3 indirectLightColor;
-    // Soft Shadow
-    return hitColor - indirectLightColor;
+    return hitColor;
 }
 
 Vector3 refract(const Vector3& incidentRay, const Vector3& surfaceNormal, const float& refractiveIndex){
