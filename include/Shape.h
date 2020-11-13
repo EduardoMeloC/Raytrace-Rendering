@@ -16,7 +16,8 @@ public:
     Shape(const Vector3& position, const Color& albedo, const Material& material);
     virtual ~Shape() = 0;
 
-    Color albedo;
+    Color albedo = 255;
+    float refractiveIndex = 1.3f;
 
     Material material;
     // virtual methods

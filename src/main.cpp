@@ -18,9 +18,13 @@
 void computePrimRay(int i, int j, Ray& ray, const Camera& camera);
 Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector<Light*>& lights, const int& depth);
 
-// TODO: Refraction, Fresnel
+Vector3 refract(const Vector3& incidentRay, const Vector3& surfaceNormal, const float& refractiveIndex);
+void fresnel(const Vector3& incidentRay, const Vector3& surfaceNormal, const float& refractiveIndex, float &kr);
+
 // TODO: Camera LookAt
 // TODO: Apply textures
+
+#define GLASS_SCENE
 
 int main(void){
     // Image and Camera
@@ -32,8 +36,8 @@ int main(void){
 
     // Objects
     std::vector<Shape*> objects;
+#ifdef RANDOM_SCENE
     for(int i=0; i < 5; i++){
-        // note that the spheres might intersect with themselves
         Vector3 randomPosition(randomFloat(-50, 50), 0, -randomFloat(-25, 25) + -75);
         for(int j=0; j < (int)objects.size(); j++){
             // avoid self intersection
@@ -45,8 +49,25 @@ int main(void){
         objects.push_back(new Sphere(randomPosition, 5));
         objects[i]->albedo = Color(randomFloat(0, 255), randomFloat(0, 255), randomFloat(0, 255));
     }
+#endif
+#ifndef RANDOM_SCENE
+    int max_spheres = 10;
+    for(int i=0; i < max_spheres; i++){
+        Vector3 position(30 * cos(PI/max_spheres*i), 0, -30 * sin(PI/max_spheres*i) - 45);
+        objects.push_back(new Sphere(position, 5));
+        objects[i]->albedo = Color(randomFloat(0, 255), randomFloat(0, 255), randomFloat(0, 255));
+    }
+#endif
+objects.push_back(new Sphere(Vector3(0, 0, -45), 5));
+#ifdef MIRROR_SCENE
+    objects.back()->material = Material::reflection;
+#endif
+#ifdef GLASS_SCENE
+    objects.back()->material = Material::reflectionAndRefraction;
+    objects.back()->refractiveIndex = 1.5f;
+#endif
     objects.push_back(new Plane(Vector3(0, -5, 0), Vector3(0, 1, 0))); 
-    objects[4]->material = Material::reflection;
+
 
     // Lights
     std::vector<Light*> lights;
@@ -60,7 +81,7 @@ int main(void){
         for(int j = 0; j < canvas.width; j++){
             Ray primRay;
             computePrimRay(i, j, primRay, camera);
-            *(pixelColor++) = traceRay(primRay, objects, lights, 2);
+            *(pixelColor++) = traceRay(primRay, objects, lights, 4);
         }
     }
 
@@ -100,7 +121,7 @@ Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector
     static int n_lights = (int) lights.size();
 
     static Color backgroundColor(0, 0, 0);
-    static Color shadowColor(0, 0, 0);
+    static Color shadowColor(255, 0, 0);
 
     RayHit hit;
     bool isHit;
@@ -164,7 +185,25 @@ Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector
                 break;
             }
             case Material::reflectionAndRefraction: {
-                std::cout << "not implemented yet!" << std::endl;
+                // I must confess I don't quite understand this part
+                Vector3 refractionColor = 0, reflectionColor = 0;
+                float kr;
+                fresnel(ray.direction, hit.normal, hit.hitObject->refractiveIndex, kr);
+                bool isOutside = ray.direction.dot(hit.normal) < 0;
+                Vector3 bias = hit.normal * shadowBias;
+                // compute refraction if it's not a case of internal reflection
+                if(kr < 1) {
+                    Vector3 refractionDirection = refract(ray.direction, hit.normal, hit.hitObject->refractiveIndex).normalized();
+                    Vector3 refractionRayOrig = isOutside ? hit.point - bias : hit.point + bias;
+                    Ray refractionRay(refractionRayOrig, refractionDirection);
+                    refractionColor = traceRay(refractionRay, objects, lights, depth-1);
+                }
+                Vector3 reflectionDirection = Vector3::reflect(ray.direction, hit.normal).normalized();
+                Vector3 reflectionRayOrig = isOutside ? hit.point + bias : hit.point - bias;
+                Ray reflectionRay(reflectionRayOrig, reflectionDirection);
+                reflectionColor = traceRay(reflectionRay, objects, lights, depth-1);
+
+                hitColor += reflectionColor * kr + refractionColor * (1 - kr);
                 break;      
             }
         }
@@ -174,3 +213,44 @@ Vector3 traceRay(Ray& ray, const std::vector<Shape*>& objects, const std::vector
     return hitColor - indirectLightColor;
 }
 
+Vector3 refract(const Vector3& incidentRay, const Vector3& surfaceNormal, const float& refractiveIndex){
+    // https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel 
+    Vector3 N = surfaceNormal;
+    float cosi = my_clamp(-1, 1, N * incidentRay);
+    float fromRefr = 1, toRefr = refractiveIndex; // fromRefr is the index of refraction of the refractive index of the medium the ray comes from, and toRefr the index of refraction the ray is going to
+    if (cosi < 0){
+        // outside the surface
+        cosi = -cosi;
+    }
+    else {
+        // inside the surface
+        N = surfaceNormal * -1;
+        std::swap(fromRefr, toRefr);
+    }
+    float Refr = fromRefr / toRefr;
+    
+    // check for total internal reflection
+    float k = 1 - Refr * Refr * (1 - cosi * cosi);
+    return k < 0 ? 0 : incidentRay * Refr + N * (Refr * cosi - sqrtf(k));
+}
+
+void fresnel(const Vector3& incidentRay, const Vector3& surfaceNormal, const float& refractiveIndex, float &kr){
+    // https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel
+    float cosi = my_clamp(-1, 1, surfaceNormal * incidentRay);
+    float fromRefr = 1, toRefr = refractiveIndex;
+    if (cosi > 0) { std::swap(fromRefr, toRefr); }
+    // Compute sini angle using Snell's law
+    float sint = fromRefr / toRefr * sqrtf(std::max(0.f, 1 - cosi * cosi));
+    // Total internal reflection
+    if(sint >= 1){
+        kr = 1;
+        std::cout << "Total internal reflection" << std::endl;
+    }
+    else {
+        float cost = sqrtf(std::max(0.f, 1 - sint * sint));
+        cosi = fabsf(cosi);
+        float Rs = ((toRefr * cosi) - (fromRefr * cost)) / ((toRefr * cosi) + (fromRefr * cost));
+        float Rp = ((fromRefr * cosi) - (toRefr * cost)) / ((fromRefr * cosi) + (toRefr * cost));
+        kr = (Rs * Rs + Rp * Rp) / 2;
+    }
+}
